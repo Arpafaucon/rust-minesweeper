@@ -1,4 +1,4 @@
-name: Rust
+name: Rust CI
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-
+    name: "Build step"
     runs-on: ubuntu-latest
 
     steps:
@@ -17,6 +17,7 @@ jobs:
       run: cargo build --verbose
 
   test:
+    name: "Test & Coverage"
     runs-on: ubuntu-latest
     
     steps:
@@ -34,10 +35,13 @@ jobs:
           RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads'
     - name: rust-grcov
       uses: actions-rs/grcov@v0.1.5
-
+    - name: Dump steps context
+        env:
+          STEPS_CONTEXT: ${{ toJson(steps) }}
+        run: echo "$STEPS_CONTEXT"
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
-        file:  ${{ steps.coverage.outputs.report }}
+        file:  ${{ steps.test.outputs.report }}
         fail_ci_if_error: false
         flags: unittests
