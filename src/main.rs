@@ -5,7 +5,7 @@ fn main() {
 
     let (height, width) = (8,12);
     let num_bombs = 1;
-    let mut c = minefield::client::Client::new(height, width, num_bombs);
+    let c = minefield::client::Client::new_random(height, width, num_bombs);
     let mut ac = ascii_client::AsciiClient {client:c};
     ac.mainloop();
     // println!("{}", ac.client.minefield);

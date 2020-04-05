@@ -1,5 +1,5 @@
 use crate::minefield;
-use minefield::client::{CellState, Client, GameState};
+use minefield::client::{CellState, GameState};
 use minefield::field::Cell;
 use std::io;
 use std::str;
@@ -97,7 +97,7 @@ impl AsciiClient {
                 println!("Enter a command: 'xY' or 'dxY' to dig, 'Q' to exit, 'fXY' to flag. E.g.: 'da3'.");
                 input.clear();
                 match io::stdin().read_line(&mut input) {
-                    Ok(n) => {
+                    Ok(_) => {
                         // println!("{}", input);
                         current_command = Self::parse_input(input.trim());
                     }

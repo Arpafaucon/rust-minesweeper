@@ -60,6 +60,14 @@ impl Minefield {
         Ok(())
     }
 
+    pub fn num_bombs(&self) -> usize {
+        self.num_bombs
+    }
+
+    pub fn shape(&self) -> (usize, usize) {
+        self.field.shape()
+    }
+
     pub fn dig(&self, row: usize, col: usize) -> Option<Cell> {
         //! Query the status of a cell
         //!
@@ -67,6 +75,7 @@ impl Minefield {
         //! None is returned if cell is outside of minefield
         self.field.get(row, col)
     }
+
     pub fn submit(&self, bomb_locations: &[(usize, usize)]) -> bool {
         //! Submit a list of bombs
         //!
@@ -98,8 +107,23 @@ impl std::fmt::Display for Minefield {
     }
 }
 
+fn cell_pattern(pattern: &str) -> Vec<Cell> {
+    let mut out: Vec<Cell> = vec![];
+    for c in pattern.chars() {
+        let car = match c {
+            'X' => Some(Cell::Bomb),
+            '0'..='8' => Some(Cell::Clean(c.to_digit(10).unwrap() as u8)),
+            _ => None,
+        };
+        if let Some(cell) = car {
+            out.push(cell);
+        }
+    }
+    out
+}
+
 #[cfg(test)]
-mod test {
+pub mod test {
     use super::*;
     #[test]
     fn new() {
@@ -107,6 +131,8 @@ mod test {
         let width = 4;
         let expected_num_bombs = 5;
         let field = Minefield::new(height, width, expected_num_bombs).unwrap();
+        assert_eq!(field.shape(), (height, width));
+        assert_eq!(field.num_bombs(), expected_num_bombs);
         let mut actual_num_bombs = 0;
         for i in 0..height {
             for j in 0..width {
@@ -144,21 +170,6 @@ mod test {
         assert_eq!(field.submit(&vec![(0, 0), (0, 1), (1, 0)]), false);
     }
 
-    fn cell_pattern(pattern: &str) -> Vec<Cell> {
-        let mut out: Vec<Cell> = vec![];
-        for c in pattern.chars() {
-            let car = match c {
-                'X' => Some(Cell::Bomb),
-                '0'..='8' => Some(Cell::Clean(c.to_digit(10).unwrap() as u8)),
-                _ => None,
-            };
-            if let Some(cell) = car {
-                out.push(cell);
-            }
-        }
-        out
-    }
-
     #[test]
     fn bury_bombs_1() {
         let mut grid = grid::Grid::new(3, 3, vec![Cell::Clean(0); 9]).unwrap();
@@ -177,8 +188,13 @@ mod test {
         assert_eq!(grid.data(), &expected_grid[..]);
     }
 
-    #[test]
-    fn bury_bombs_3() {
+    pub fn generate_test_minefield() -> (Minefield, Vec<(usize, usize)>) {
+        //! Test minefield of dimension 3x5, with 5 bombs
+        //!
+        //! Pattern
+        //! X__X_    X22X2
+        //! _X__X -> 2X33X
+        //! __X__    12X21
         let mut grid = grid::Grid::new(3, 5, vec![Cell::Clean(0); 15]).unwrap();
         let bomb_locations: Vec<(usize, usize)> = vec![(0, 0), (0, 3), (1, 1), (1, 4), (2, 2)];
 
@@ -197,5 +213,12 @@ mod test {
         Minefield::bury_bombs(&mut grid, &bomb_locations[3..]).unwrap();
         let expected_grid = cell_pattern("X22X22X33X12X21");
         assert_eq!(grid.data(), &expected_grid[..]);
+
+        (Minefield{ field:grid, num_bombs:5}, bomb_locations)
+    }
+
+    #[test]
+    fn bury_bombs_3() {
+        generate_test_minefield();
     }
 }
