@@ -47,5 +47,6 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         file:  ${{ steps.coverage.outputs.report }}
+        token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: false
         flags: unittests
