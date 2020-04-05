@@ -36,7 +36,8 @@ jobs:
       env:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads'
-    - name: Build coverage data
+    - id: coverage
+      name: Build coverage data
       uses: actions-rs/grcov@v0.1.5
     - name: Debug steps context
       env:
@@ -45,6 +46,6 @@ jobs:
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
-        file:  ${{ steps.test.outputs.report }}
+        file:  ${{ steps.coverage.outputs.report }}
         fail_ci_if_error: false
         flags: unittests
