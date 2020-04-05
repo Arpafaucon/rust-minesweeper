@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: "Build step"
+    name: "Test (rust-stable)"
     runs-on: ubuntu-latest
 
     steps:
@@ -15,11 +15,13 @@ jobs:
       uses: actions/checkout@v2
     - name: Compile
       run: cargo build --verbose
+    - name: Test
+      run: cargo test --verbose
 
   test:
-    name: "Test & Coverage"
+    name: "Coverage (rust-nightly)"
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -32,7 +34,7 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --all-features --no-fail-fast   
+        args: --all-features --no-fail-fast
       env:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads'
