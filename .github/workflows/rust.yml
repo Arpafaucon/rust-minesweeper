@@ -11,8 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Compile
       run: cargo build --verbose
 
   test:
@@ -20,21 +21,24 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: "Setup toolchain: nightly"
+      uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
         override: true
-    - uses: actions-rs/cargo@v1
+    - name: Run tests
+      uses: actions-rs/cargo@v1
       with:
         command: test
         args: --all-features --no-fail-fast   
       env:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads'
-    - name: rust-grcov
+    - name: Build coverage data
       uses: actions-rs/grcov@v0.1.5
-    - name: Dump steps context
+    - name: Debug steps context
       env:
         STEPS_CONTEXT: ${{ toJson(steps) }}
       run: echo "$STEPS_CONTEXT"
