@@ -147,6 +147,25 @@ pub mod test {
     }
 
     #[test]
+    fn display() {
+        let grid = grid::Grid::new(
+            2,
+            2,
+            vec![Cell::Bomb, Cell::Bomb, Cell::Clean(2), Cell::Clean(2)],
+        )
+        .unwrap();
+
+        let field = Minefield {
+            field: grid,
+            num_bombs: 2,
+        };
+
+        let display_string = format!("{}", field);
+        assert_eq!(display_string, format!("{}", field.field));
+        assert_eq!(display_string, "X X\n2 2")
+    }
+
+    #[test]
     fn preset_example() {
         let grid = grid::Grid::new(
             2,
