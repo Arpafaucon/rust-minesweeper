@@ -58,6 +58,10 @@ impl Client {
         cell
     }
 
+    pub fn num_bombs(&self) -> usize {
+        return self.minefield.num_bombs();
+    }
+
     pub fn query_smart(&mut self, row: usize, col: usize) -> GameState {
         let mut set = std::collections::HashSet::new();
         set.insert((row, col));
@@ -98,10 +102,7 @@ impl Client {
         }
     }
 
-    pub fn submit(&mut self) -> Result<GameState, String> {
-        if self.game_state != GameState::Running {
-            return Err(format!("Game state must be 'Running' to submit, current state is: {:?}", self.game_state));
-        }
+    pub fn get_flag_locations(&self) -> Vec<(usize, usize)> {
         let mut flag_locations = vec![];
         let (h, w) = self.state.shape();
         for i in 0..h {
@@ -112,6 +113,14 @@ impl Client {
                 }
             }
         }
+        flag_locations
+    }
+
+    pub fn submit(&mut self) -> Result<GameState, String> {
+        if self.game_state != GameState::Running {
+            return Err(format!("Game state must be 'Running' to submit, current state is: {:?}", self.game_state));
+        }
+        let flag_locations = self.get_flag_locations();
         if self.minefield.submit(&flag_locations) {
             self.game_state = GameState::Won;
         } else {
