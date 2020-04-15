@@ -1,33 +1,5 @@
-extern crate minesweeper;
-
-use minesweeper::minefield;
-use minesweeper::tui_client;
-
-
-
-
 fn main() {
-
-    let (height, width) = (12,30);
-    let num_bombs = 20;
-    let c = minefield::client::Client::new_random(height, width, num_bombs);
-    // let mut ac = ascii_client::AsciiClient {client:c};
-    let mut tc = tui_client::TuiClient::new(c);
-    tc.mainloop();
-
-    // println!("{}", ac.client.minefield);
-    // println!("{}", ac);
-    // // ac.client.flag(0, 0);
-    // // println!("{}", ac);
-    // ac.client.query_smart(0, 4);
-    // println!("{}", ac);
-
-    // for i in 0..height {
-    //     for j in 0..width {
-    //         ac.client.query_smart(i, j);
-    //     }
-    // }
-    // println!("{}", ac);
+    println!("Please launch ascii_client or tui_client to play :) !");
 }
 
 /*

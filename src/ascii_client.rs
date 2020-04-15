@@ -31,6 +31,10 @@ enum Command {
 }
 
 impl AsciiClient {
+    pub fn new(c: minefield::client::Client) -> AsciiClient {
+        AsciiClient { client: c }
+    }
+
     fn check_coordinates(&self, c: Command) -> Command {
         match c {
             Command::Query(i, j) | Command::Flag(i, j) => {
@@ -41,7 +45,7 @@ impl AsciiClient {
                     Command::None
                 }
             }
-            other => other
+            other => other,
         }
     }
 
@@ -68,14 +72,14 @@ impl AsciiClient {
             "s" => Command::Submit,
             _ if low_i.len() == 2 => match Self::parse_coordinate(&low_i) {
                 Some((row, col)) => Command::Query(row, col),
-                None => Command::None
+                None => Command::None,
             },
             _ if low_i.len() == 3 => {
                 if let Some((row, col)) = Self::parse_coordinate(&low_i[1..]) {
                     match &low_i[..1] {
                         "f" => Command::Flag(row, col),
                         "d" => Command::Query(row, col),
-                        _ => Command::None
+                        _ => Command::None,
                     }
                 } else {
                     Command::None
@@ -114,7 +118,7 @@ impl AsciiClient {
                 }
                 Command::Submit => {
                     self.client.submit().unwrap();
-                },
+                }
                 Command::Flag(row, col) => {
                     self.client.flag(row, col);
                 }
@@ -124,7 +128,6 @@ impl AsciiClient {
         // println!("Game finished: {:?}", self.client.get_game_state());
         self.client.reveal(true);
         println!("{}", self);
-
     }
 }
 
@@ -140,7 +143,7 @@ impl std::fmt::Display for AsciiClient {
         let state = self.client.get_state();
         writeln!(f, "state: {:?}", self.client.get_game_state())?;
         let (h, w) = self.client.get_state().shape();
-        write!(f, "   {} \n", &alphabet[..w])?;
+        write!(f, "   {}\n", &alphabet[..w])?;
         write!(f, "  ┏{}┓\n", "━".repeat(w))?;
         for i in 0..h {
             write!(f, "{:2}┃", i)?;
@@ -166,6 +169,63 @@ mod test {
         assert_eq!(AsciiClient::parse_input("55"), Command::None);
         assert_eq!(AsciiClient::parse_input("fa4"), Command::Flag(4, 0));
         assert_eq!(AsciiClient::parse_input("dz4"), Command::Query(4, 25));
+    }
+    use minefield::field::test::generate_test_minefield;
+    #[test]
+    fn display_pristine() {
+        let (field, _bomb_locations) = generate_test_minefield();
+        let client = minefield::client::Client::from_minefield(field);
+        let a_client = AsciiClient::new(client);
 
+        let pristine_state = format!("{}", a_client);
+        assert_eq!(
+            pristine_state,
+            "state: Running
+   abcde
+  ┏━━━━━┓
+ 0┃█████┃
+ 1┃█████┃
+ 2┃█████┃
+  ┗━━━━━┛\n"
+        );
+    }
+
+    #[test]
+    fn display_flagged() {
+        let (field, _bomb_locations) = generate_test_minefield();
+        let client = minefield::client::Client::from_minefield(field);
+        let mut a_client = AsciiClient::new(client);
+
+        a_client.client.flag(0, 0);
+        let flagged_state = format!("{}", a_client);
+        assert_eq!(
+            flagged_state,
+            "state: Running
+   abcde
+  ┏━━━━━┓
+ 0┃▓████┃
+ 1┃█████┃
+ 2┃█████┃
+  ┗━━━━━┛\n"
+        );
+    }
+    #[test]
+    fn display_revealed() {
+        let (field, _bomb_locations) = generate_test_minefield();
+        let client = minefield::client::Client::from_minefield(field);
+        let mut a_client = AsciiClient::new(client);
+
+        a_client.client.reveal(true);
+        let revealed_state = format!("{}", a_client);
+        assert_eq!(
+            revealed_state,
+            "state: Lost
+   abcde
+  ┏━━━━━┓
+ 0┃*22*2┃
+ 1┃2*33*┃
+ 2┃12*21┃
+  ┗━━━━━┛\n"
+        );
     }
 }

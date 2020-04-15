@@ -153,11 +153,6 @@ mod test {
     use super::*;
     use super::super::field;
 
-    pub fn test_client() -> Client {
-        let (minefield, bomb_locations) = field::test::generate_test_minefield();
-        Client::from_minefield(minefield)
-    }
-
     #[test]
     fn scenario_0() {
         let mut client = Client::new_random(10, 10, 0);

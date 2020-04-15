@@ -306,7 +306,7 @@ mod test {
 
     #[test]
     fn coordinates() {
-        let (field, bomb_locations) = generate_test_minefield();
+        let (field, _bomb_locations) = generate_test_minefield();
         let (h, w) = field.shape();
         let client = minefield::client::Client::from_minefield(field);
         let mut t_client = TuiClient::new(client);
