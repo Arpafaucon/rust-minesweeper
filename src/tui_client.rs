@@ -4,38 +4,25 @@ extern crate termion;
 use minefield::client::{CellState, GameState};
 use minefield::field::Cell;
 use std::convert::TryInto;
-use std::fmt::Display;
-use std::io;
 use std::io::Write;
-use std::iter;
-use std::ops::Range;
-use std::str;
 use std::string::ToString;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use std::usize;
 use termion::event::{Event, Key, MouseEvent};
 use termion::input::{MouseTerminal, TermRead};
 use termion::raw::IntoRawMode;
-use termion::{clear, color, cursor, style};
+use termion::{clear, color, cursor};
 
 const GRID_OFFSET: (u16, u16) = (5, 3); // (row, col)
 const BOX_CHARS: [char; 10] = ['+', '-', '+', '|', '━', '┃', '┏', '┓', '┗', '┛'];
-// const HINT_COLORS: [dyn color::Color; 8] = &[
-//     color::Reset,
-//     color::Blue,
-//     color::Green,
-//     color::Red,
-//     color::Cyan,
-//     color::LightGreen,
-//     color::Magenta,
-//     color::Yellow,
-// ];
+
 pub struct TuiClient {
     current_cursor: (u16, u16),
     client: minefield::client::Client,
     start_time: Option<Instant>,
 }
 
+#[derive(PartialEq, Debug)]
 enum TuiAction {
     Exit,
     Flag,
@@ -44,19 +31,12 @@ enum TuiAction {
     None,
 }
 
-struct TuiCommand {
-    cursor_pos: (u16, u16),
-    grid_pos: (usize, usize),
-    action: TuiAction,
-}
-
 pub fn cellstate_to_prettystring(c: &CellState) -> String {
     match c {
         CellState::Hidden => format!(
             "{bg} {bgr}",
             bg = color::Bg(color::White),
             bgr = color::Bg(color::Reset),
-
         ),
         CellState::Flagged => format!(
             "{fg}{bg}¶{bgr}{fgr}",
@@ -182,19 +162,6 @@ impl TuiClient {
             let duration = Instant::now() - start_time;
             write!(stdout, "Time: {:?}", duration)?;
         }
-        // write!(
-        //     stdout,
-        //     "{pos}row={row}, col={col}",
-        //     pos = cursor::Goto(1, 1),
-        //     row = cursor_pos.1,
-        //     col = cursor_pos.0
-        // )?;
-        // write!(
-        //     stdout,
-        //     "{pos}, size={size:?}",
-        //     pos = cursor::Goto(1, 2),
-        //     size = (grid_h, grid_w)
-        // )?;
         // write grid borders
         let box_h: u16 = (grid_h + 2).try_into().unwrap();
         let box_w: u16 = (grid_w + 2).try_into().unwrap();
@@ -260,8 +227,9 @@ impl TuiClient {
         };
 
         // check validity of cursor, update state
-        self.current_cursor = target_cursor;
+
         if self.to_grid_coordinates(target_cursor.1, target_cursor.0) != None {
+            self.current_cursor = target_cursor;
         }
         action
     }
@@ -299,15 +267,14 @@ impl TuiClient {
                 }
                 TuiAction::Exit => {
                     request_exit = true;
-                },
+                }
                 TuiAction::Submit => {
                     self.client.submit().unwrap();
                 }
                 TuiAction::None => (),
-                _ => (),
             }
             self.draw(&mut stdout).unwrap();
-            if self.client.get_game_state() != GameState::Running || request_exit{
+            if self.client.get_game_state() != GameState::Running || request_exit {
                 self.client.reveal(true);
                 self.draw(&mut stdout).unwrap();
                 break;
@@ -318,7 +285,7 @@ impl TuiClient {
             GameState::Lost if request_exit => "No time anymore ? See you soon !",
             GameState::Lost => "Another time !",
             GameState::Won => "Congratulations ! You're the best! ",
-            _ => "How do you do that ????"
+            _ => "How do you do that ????",
         };
         write!(
             stdout,
@@ -329,5 +296,82 @@ impl TuiClient {
             goodbye_sentence = goodbye_sentence
         )
         .unwrap()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use minefield::field::test::generate_test_minefield;
+
+    #[test]
+    fn coordinates() {
+        let (field, bomb_locations) = generate_test_minefield();
+        let (h, w) = field.shape();
+        let client = minefield::client::Client::from_minefield(field);
+        let mut t_client = TuiClient::new(client);
+
+        // basic conversion checks
+        assert_eq!(
+            t_client.to_grid_coordinates(GRID_OFFSET.0 + 1, GRID_OFFSET.1 + 1),
+            Some((0, 0))
+        );
+        assert_eq!(
+            t_client.to_grid_coordinates(GRID_OFFSET.0 + (h as u16), GRID_OFFSET.1 + (w as u16)),
+            Some((2, 4))
+        );
+        assert_eq!(
+            t_client
+                .to_grid_coordinates(GRID_OFFSET.0 + 1 + (h as u16), GRID_OFFSET.1 + (w as u16)),
+            None
+        );
+        assert_eq!(
+            t_client
+                .to_grid_coordinates(GRID_OFFSET.0 + (h as u16), GRID_OFFSET.1 + 1 + (w as u16)),
+            None
+        );
+        assert_eq!(
+            t_client.to_grid_coordinates(GRID_OFFSET.0, GRID_OFFSET.1),
+            None
+        );
+
+        // Checks that the event parsing method does not allow
+        // the cursor to leave the grid
+
+        // Upper left corner
+        let upp_left_cursor = t_client.current_cursor;
+        assert_eq!(t_client.parse_event(Event::Key(Key::Left)), TuiAction::None);
+        assert_eq!(t_client.current_cursor, upp_left_cursor); // cannot go left
+
+        assert_eq!(t_client.parse_event(Event::Key(Key::Up)), TuiAction::None);
+        assert_eq!(t_client.current_cursor, upp_left_cursor); // cannot go up
+
+        assert_eq!(t_client.parse_event(Event::Key(Key::Down)), TuiAction::None);
+        assert_eq!(
+            t_client.current_cursor,
+            (upp_left_cursor.0, upp_left_cursor.1 + 1)
+        ); // down is allowed
+
+        // Bottom right corner
+        let bott_right_curser = (GRID_OFFSET.1 + (w as u16), GRID_OFFSET.0 + (h as u16));
+        assert_eq!(
+            t_client.parse_event(Event::Mouse(MouseEvent::Release(
+                bott_right_curser.0,
+                bott_right_curser.1
+            ))),
+            TuiAction::None
+        ); // goto corner
+        assert_eq!(
+            t_client.parse_event(Event::Key(Key::Right)),
+            TuiAction::None
+        );
+        assert_eq!(t_client.current_cursor, bott_right_curser); // cannot go up
+        assert_eq!(t_client.parse_event(Event::Key(Key::Down)), TuiAction::None);
+        assert_eq!(t_client.current_cursor, bott_right_curser); // cannot go up
+        assert_eq!(t_client.parse_event(Event::Key(Key::Left)), TuiAction::None);
+        assert_eq!(
+            t_client.current_cursor,
+            (bott_right_curser.0 - 1, bott_right_curser.1)
+        ); // right is allowed
     }
 }

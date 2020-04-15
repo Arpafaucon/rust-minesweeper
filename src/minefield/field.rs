@@ -107,24 +107,24 @@ impl std::fmt::Display for Minefield {
     }
 }
 
-fn cell_pattern(pattern: &str) -> Vec<Cell> {
-    let mut out: Vec<Cell> = vec![];
-    for c in pattern.chars() {
-        let car = match c {
-            'X' => Some(Cell::Bomb),
-            '0'..='8' => Some(Cell::Clean(c.to_digit(10).unwrap() as u8)),
-            _ => None,
-        };
-        if let Some(cell) = car {
-            out.push(cell);
-        }
-    }
-    out
-}
 
 #[cfg(test)]
 pub mod test {
     use super::*;
+    fn cell_pattern(pattern: &str) -> Vec<Cell> {
+        let mut out: Vec<Cell> = vec![];
+        for c in pattern.chars() {
+            let car = match c {
+                'X' => Some(Cell::Bomb),
+                '0'..='8' => Some(Cell::Clean(c.to_digit(10).unwrap() as u8)),
+                _ => None,
+            };
+            if let Some(cell) = car {
+                out.push(cell);
+            }
+        }
+        out
+    }
     #[test]
     fn new() {
         let height = 4;

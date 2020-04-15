@@ -1,5 +1,4 @@
 use std::fmt;
-use std::iter::IntoIterator;
 use std::usize::{self};
 
 pub struct Grid<T> {
